@@ -4,7 +4,7 @@ import numpy as np
 import random
 import os
 
-# Пытаемся бесшовно импортировать остальные вкладки-модули
+# Бесшовный импорт сопутствующих вкладок-модулей
 try:
     import map_module
     import characteristics_module
@@ -14,7 +14,7 @@ except:
 
 st.set_page_config(page_title="HLTV AI PARSER PRO", layout="wide")
 
-# ИНЪЕКЦИЯ ЧЕРНОГО КИБЕРСПОРТИВНОГО СТИЛЯ CYBERSHOCK
+# ИНЪЕКЦИЯ СТИЛЯ CYBERSHOCK BLACKOUT
 st.markdown("""
     <style>
     .stApp { background-color: #080A0D !important; color: #E2E8F0 !important; }
@@ -48,13 +48,13 @@ CURRENT_EDPI = MY_DPI * CURRENT_SENS
 
 if menu == "🖥️ Загрузка Демки и HLTV Анализ":
     st.title("🖥️ Потоковая Загрузка Демки и HLTV 2.0 Анализ")
-    st.write("Сайт работает в облаке. 0% нагрузки на твой ПК. Лимиты файлов расширены.")
+    st.write("Сайт работает в облаке Streamlit. 0% нагрузки на твой ПК. Лимиты файлов расширены.")
 
-    # Сверхмощное поле загрузки с поддержкой 300МБ+ демок
+    # Поле загрузки с поддержкой тяжелых демок весом 300МБ+
     uploaded_demo = st.file_uploader("Перетащи сюда файл матча (.dem) [Максимум 500MB]", type=["dem"])
     
     if uploaded_demo is not None:
-        # Память под защитой: пишем демку 300МБ на диск сервера по 1 мегабайту, чтобы не упал бэкенд
+        # Защита оперативки: пишем демку 300МБ на диск сервера кусочками по 1 мегабайту
         with st.spinner("💾 Потоковое скачивание тяжелой демки в облако (300MB+)..."):
             with open("match.dem", "wb") as f:
                 while True:
@@ -66,7 +66,7 @@ if menu == "🖥️ Загрузка Демки и HLTV Анализ":
         p_name = "Твой Профиль"
     else:
         st.info("💡 Демка не загружена. Включен демонстрационный режим Faceit Premium для теста интерфейса:")
-        p_name = st.text_input("Введи свой ник для теста аналитики:", "donk")
+        p_name = st.text_input("Введи свой ник для теста аналитики:", "kyousuke")
 
     st.markdown("---")
     st.markdown("## 📊 ТЕКУЩАЯ СТАТИСТИКА МАТЧА И РЕЙТИНГ")
@@ -75,6 +75,7 @@ if menu == "🖥️ Загрузка Демки и HLTV Анализ":
     hltv_rating = 1.32
     reaction_time = 174
     
+    # Жестко зафиксированные 4 колонки — теперь без ошибок синтаксиса!
     c1, c2, c3, c4 = st.columns(4)
     with c1:
         st.markdown(f"<div class='metric-title'>HLTV Рейтинг 2.0</div><div class='hltv-stat' style='color:#FF5500;'>{hltv_rating}</div>", unsafe_allow_html=True)
@@ -105,7 +106,7 @@ if menu == "🖥️ Загрузка Демки и HLTV Анализ":
             st.markdown(f"<div class='faceit-card'><div style='font-weight:bold; color:#3B82F6;'>{team_b[i]}</div><div style='font-size:12px; color:#94A3B8;'>Faceit: 10 LVL</div><div style='font-size:14px; margin-top:5px;'>K/D: 0.98</div></div>", unsafe_allow_html=True)
             st.button(f"👁️ Профиль {team_b[i]}", key=f"btn_b_{i}")
 
-    # ССЫЛКА НА НАШУ ИИ-НАРЕЗКУ ХАЙЛАЙТОВ НА ЮТУБ
+    # ССЫЛКА НА ИИ-НАРЕЗКУ ХАЙЛАЙТОВ
     st.markdown("---")
     st.markdown("### 🎬 Автоматический монтаж лучших моментов матча")
     st.link_button("📺 СМОТРЕТЬ ИИ-НАРЕЗКУ ХАЙЛАЙТОВ МАТЧА НА YOUTUBE", "https://youtube.com")
