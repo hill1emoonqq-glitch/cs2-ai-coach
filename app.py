@@ -1,6 +1,10 @@
 import streamlit as st
 import random
-
+import streamlit as st
+import pandas as pd
+from demoparser2 import DemoParser
+import os
+import movement
 st.set_page_config(page_title="CS2 AI Ultra Coach [1920x1440]", layout="wide")
 
 st.sidebar.title("🎮 ИИ-МЕНЮ: 100 ПАРАМЕТРОВ")
@@ -72,13 +76,15 @@ if page == "Блок 1: Стрельба и Аим (1-20)":
             st.markdown(f"**[Параметр {num:02d}] {name}** — `{elo} ELO`")
             st.write(desc)
             st.markdown("---")
-
         # --- ТРЕНИРОВКА БЛОКА 1 ---
         st.markdown("## 🏋️‍♂️ Специализированная тренировка Аима (Карты 1-10 из 50)")
         st.code("1. Aim Botz [ID: 3070244462] — 100 ботов на время (Осознанная пауза 0.3 сек перед выстрелом для исправления оверфлика)")
         st.code("2. Fast Aim / Reflex [ID: 3070758981] — Стрельба строго короткими очередями по 2-3 патрона (Исправление спрея)")
         st.code("3. Сервер Cybershock DM HS-Only — 20 минут только с Deagle. Отрабатывай жесткий Counter-Strafe")
 
+elif page == "Блок 2: Движение и Позиционирование (21-40)":
+    movement.show_movement_block()
 else:
     st.title("🚧 Модуль вынесен в отдельный файл")
-    st.info("Переключай меню слева. Для работы остальных блоков нам нужно создать файлы `movement.py`, `economy.py`, `clutch.py` и `teamplay.py` в твоем GitHub.")
+    st.info("Переключай меню слева. Для работы остальных блоков нам нужно создать файлы `economy.py`, `clutch.py` и `teamplay.py` в твоем GitHub.")
+import movement
