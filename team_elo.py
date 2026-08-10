@@ -6,7 +6,7 @@ def show_page():
     st.write("Итоговый аналитический блок. Расчет виртуального Эло, выжимка ТОП-10 характеристик и запуск ИИ-Логгера.")
     
     # --- ИНТЕРАКТИВНАЯ ФИЧА САЙТА: ИИ-ЛОГГЕР ЭЛО ---
-    st.markdown("### 🛠️ ИНТЕРАКТИВНЫЕ ФИЧИ МОДУЛЯ (САЙТ-ФИЧЕЙ):")
+    st.markdown("### 🛠️ ИНТЕРАКТИВНЫЕ ФИЧИ МОДУЛЯ (САЙТ-ФИЧИ):")
     st.markdown("**[Фича Сайта] Автономный ИИ-Калькулятор Эло за Катку**")
     st.write("Введи сухую статистику своей сыгранной игры, чтобы ИИ перевел её в эквивалент Эло системы:")
     
@@ -33,7 +33,7 @@ def show_page():
             
         calculated_elo = min(4500, max(1000, base_elo + kd_bonus + assist_bonus + res_bonus))
         
-        st.markdown(f"### Итоговая оценка матча: <span style='color:#00FF66; font-weight:bold;'>{calculated_elo} ELO</span>", unsafe_allow_html=True)
+        st.markdown(f"### Итоговая оценка матча: <span style='color:#00FF66; font-weight:bold; font-size:24px;'>{calculated_elo} ELO</span>", unsafe_allow_html=True)
         
         # Индивидуальный вердикт ИИ под твои 1920x1440
         if kd_input > 1.2 and assists_input < 3:
@@ -58,9 +58,7 @@ def show_page():
     ]
     
     for num, (name, elo, desc) in enumerate(t2_data, 91):
-        st.markdown(f"**[Параметр {num:02d}] {name}** — `{elo} ELO`")
-        st.write(desc)
-        st.markdown("---")
+        st.markdown(f"**[Параметр {num:02d}] {name}** — `{elo} ELO` \n\n {desc} \n\n ---")
 
     # --- ЗАКРЫВАЕМ ПУЛ ТРЕНИРОВОК КАРТАМИ 46-50 ---
     st.markdown("## 🏋️‍♂️ Специализированная тренировка Командной Синергии (Карты 46-50 из 50)")
