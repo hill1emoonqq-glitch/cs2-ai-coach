@@ -88,3 +88,6 @@ else:
     st.title("🚧 Модуль вынесен в отдельный файл")
     st.info("Переключай меню слева. Для работы остальных блоков нам нужно создать файлы `economy.py`, `clutch.py` и `teamplay.py` в твоем GitHub.")
 import movement
+import clutch
+elif page == "Блок 4: Клатчи и Психология (61-80)":
+    clutch.show_clutch_block()
