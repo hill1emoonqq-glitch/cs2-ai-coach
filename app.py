@@ -91,3 +91,6 @@ import movement
 import clutch
 elif page == "Блок 4: Клатчи и Психология (61-80)":
     clutch.show_clutch_block()
+import teamplay
+elif page == "Блок 5: Тимплей и Общий Вердикт (81-100)":
+    teamplay.show_teamplay_block()
