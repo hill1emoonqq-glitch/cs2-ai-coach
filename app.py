@@ -94,3 +94,13 @@ elif page == "Блок 4: Клатчи и Психология (61-80)":
 import teamplay
 elif page == "Блок 5: Тимплей и Общий Вердикт (81-100)":
     teamplay.show_teamplay_block()
+               st.success("Сыграй сегодня ровно 0 игр в Премьер-режиме. Твой мозг должен перезаписать мышечную память на новую сенсу.")
+
+       except Exception as e:
+           st.error(f"Ошибка чтения демо-файла: {e}. Убедись, что загружаешь именно файл матча с расширением .dem")
+
+   if os.path.exists("match.dem"):
+       os.remove("match.dem")
+
+elif page == "Блок 5: Тимплей и Общий Вердикт (81-100)":
+    teamplay.show_teamplay_block()
