@@ -11,12 +11,12 @@ def show_page():
     
     col_l1, col_l2 = st.columns(2)
     with col_l1:
-        map_select = st.selectbox("Выбери тактическую карту:", ["Mirage", "Inferno", "Ancient", "Anubis"])
+        map_select = st.selectbox("Выбери тактическую карту:", ["Mirage", "Inferno", "Ancient"])
     with col_l2:
         zone_select = st.selectbox("Какую точку удерживаете:", ["Плент А (Упоры)", "Плент Б (Кросс)", "Мидл / Коннектор"])
         
     if st.button("📐 РАССЧИТАТЬ СИНЕРГИЮ ЛИНИИ"):
-        st.success(f"Геометрия для {map_select} — {zone_select} успешно выровнена по сетке 1920x1440!")
+        st.success(f"Геометрия линий для {map_select} — {zone_select} успешно выровнена по сетке 1920x1440!")
         
         st.markdown("**📋 ИИ-ТАКТИКА ДЛЯ ВАШЕЙ ПАРЫ:**")
         st.code("Игрок 1 (Твой напарник): Занимает глубокий байт-угол. Его задача — просто издать звук выстрела и уйти за стену.")
@@ -41,11 +41,8 @@ def show_page():
     ]
     
     for num, (name, elo, desc) in enumerate(t1_data, 81):
-        st.markdown(f"**[Параметр {num:02d}] {name}** — `{elo} ELO`")
-        st.write(desc)
-        st.markdown("---")
+        st.markdown(f"**[Параметр {num:02d}] {name}** — `{elo} ELO` \n\n {desc} \n\n ---")
 
-    # --- ТРЕНИРОВКА БЛОКА 9 ---
-    st.markdown("## 🏋️‍♂️ Специализированная тренировка Командных Линий (Карты 41-45 из 50)")
+    st.markdown("## 🏋️‍♂️ Кнопки мгновенного запуска тренировок")
     st.link_button("🔥 ИГРАТЬ: YPRAC INFERNO GUIDE", "steam://url/CommunityFilePage/3074034634")
-    st.write("Цель: Тренировка удержания 'банана' и ретопология мертвых зон перекрестного огня напарника.")
+
