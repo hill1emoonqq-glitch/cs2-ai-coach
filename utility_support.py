@@ -6,7 +6,7 @@ def show_page():
     st.write("Анализ командного ослепления, раскрытия дымовых завес и скорости бай-зоны.")
     
     # --- ВНЕШНИЕ СУПЕР-ФИШКИ САЙТА ДЛЯ ТВОЕГО УДОБСТВА ---
-    st.markdown("### 🛠️ ИНТЕРАКТИВНЫЕ ФИЧИ МОДУЛЯ (САЙТ-ФИШКИ):")
+    st.markdown("### 🛠️ ИНТЕРАКТИВНЫЕ ФИЧИ МОДУЛЯ (САЙТ-ФИЧИ):")
     
     col_f1, col_f2 = st.columns(2)
     with col_f1:
@@ -42,11 +42,7 @@ def show_page():
     ]
     
     for num, (name, elo, desc) in enumerate(e2_data, 51):
-        st.markdown(f"**[Параметр {num:02d}] {name}** — `{elo} ELO`")
-        st.write(desc)
-        st.markdown("---")
+        st.markdown(f"**[Параметр {num:02d}] {name}** — `{elo} ELO` \n\n {desc} \n\n ---")
 
-    # --- ТРЕНИРОВКА БЛОКА 6 ---
-    st.markdown("## 🏋️‍♂️ Специализированная тренировка Поддержки (Карты 26-30 из 50)")
+    st.markdown("## 🏋️‍♂️ Кнопки мгновенного запуска тренировок")
     st.link_button("🔥 ИГРАТЬ: SPRAY TRAINING CS2", "steam://url/CommunityFilePage/3071112345")
-    st.write("Цель: Тренировка зажима через дымовые завесы (Spam Control) с контролем веера мыши на новой сенсе.")
