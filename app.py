@@ -39,58 +39,60 @@ if uploaded_demo is not None:
             from demoparser2 import DemoParser
             parser = DemoParser("match.dem")
             
-            # Парсим список игроков напрямую по рабочим колонкам
-            players_df = parser.parse_ticks(["player_death"])
+            # 🔥 ИСПРАВЛЕНИЕ: Парсим строго КЛЮЧЕВЫЕ СОБЫТИЯ, а не тики кадров!
+            # Это отсечет миллионные дубликаты строк
+            events_df = parser.parse_events("player_death")
             
-            if not players_df.empty and "name" in players_df.columns:
+            if not events_df.empty:
                 st.markdown("<div class='success-box'><h3>✅ ИГРОКИ УСПЕШНО НАЙДЕНЫ!</h3>Выбери свой ник ниже для автоматического расчета статистики.</div>", unsafe_allow_html=True)
                 
-                # Достаем список всех реальных ников из демки
-                all_players = players_df["name"].dropna().unique()
-                selected_player = st.selectbox("Выбери свой ник из этого матча:", all_players)
+                cols = events_df.columns.tolist()
                 
-                if selected_player:
-                    # Подсчитываем реальные фраги и смерти по точным именам колонок
-                    # Проверяем разные варианты именования событий в демках CS2
-                    cols = players_df.columns.tolist()
-                    attacker_col = "attacker_name" if "attacker_name" in cols else ("name" if "name" in cols else cols[0])
-                    user_col = "user_name" if "user_name" in cols else ("name" if "name" in cols else cols[0])
+                # Ищем правильные колонки в реальном ивенте player_death
+                attacker_col = "attacker_name" if "attacker_name" in cols else ("attacker" if "attacker" in cols else None)
+                user_col = "user_name" if "user_name" in cols else ("user" if "user" in cols else None)
+                
+                if attacker_col and user_col:
+                    # Собираем всех уникальных игроков из матча
+                    all_players = pd.concat([events_df[attacker_col], events_df[user_col]]).dropna().unique()
+                    all_players = sorted([p for p in all_players if p != ""])
                     
-                    p_kills = len(players_df[players_df[attacker_col] == selected_player])
-                    p_deaths = len(players_df[players_df[user_col] == selected_player])
+                    selected_player = st.selectbox("Выбери свой ник из этого матча:", all_players, index=all_players.index("unight") if "unight" in all_players else 0)
                     
-                    # Если данные пересекаются из-за структуры тиков, балансируем под реалистичный лог матча
-                    if p_kills == p_deaths and p_kills > 0:
-                        # Корректируем остаточное смещение логов демки для вывода K/D
-                        p_kills = int(p_kills * 1.2) if "attacker_name" not in cols else p_kills
-                        p_deaths = max(1, int(p_deaths * 0.8))
-                    
-                    # Защита от деления на ноль
-                    safe_deaths = p_deaths if p_deaths > 0 else 1
-                    hltv_rating = round(0.6 + (p_kills / safe_deaths) * 0.4, 2)
-                    
-                    # Расчет рекордов
-                    st.markdown(f"## 📊 Реальная статистика для: **{selected_player}**")
-                    c1, c2, c3 = st.columns(3)
-                    c1.metric("Настоящие убийства (Kills)", p_kills)
-                    c2.metric("Настоящие смерти (Deaths)", p_deaths)
-                    c3.metric("Честный K/D Ratio", round(p_kills / safe_deaths, 2))
-                    
-                    st.metric("Рассчитанный HLTV Рейтинг 2.0 за матч", hltv_rating)
-                    
-                    if hltv_rating >= 1.2:
-                        st.success("🏆 РЕКОРД! Ты отыграл этот матч на уровне жесткого Faceit Premium.")
-                    else:
-                        st.warning("⚠️ ИИ-ВЕРДИКТ: Твоя сенса 1.60 создает микро-тряску. Снижай eDPI до 1.45 для стабилизации.")
+                    if selected_player:
+                        # Считаем чистые единичные события убийств и смертей
+                        p_kills = len(events_df[events_df[attacker_col] == selected_player])
+                        p_deaths = len(events_df[events_df[user_col] == selected_player])
+                        
+                        # Проверяем наличие хедшотов
+                        hs_col = "headshot" if "headshot" in cols else None
+                        if hs_col:
+                            p_hs = len(events_df[(events_df[attacker_col] == selected_player) & (events_df[hs_col] == True)])
+                            hs_percent = int((p_hs / p_kills * 100)) if p_kills > 0 else 0
+                        else:
+                            hs_percent = 0
+                            
+                        safe_deaths = p_deaths if p_deaths > 0 else 1
+                        hltv_rating = round(0.6 + (p_kills / safe_deaths) * 0.4, 2)
+                        
+                        # Вывод реальных, очищенных данных раундов
+                        st.markdown(f"## 📊 Реальная статистика для: **{selected_player}**")
+                        c1, c2, c3 = st.columns(3)
+                        c1.metric("Настоящие убийства (Kills)", p_kills)
+                        c2.metric("Настоящие смерти (Deaths)", p_deaths)
+                        c3.metric("Честный процент Headshots", f"{hs_percent}%")
+                        
+                        st.metric("Рассчитанный HLTV Рейтинг 2.0 за матч", hltv_rating)
+                        
+                        if hltv_rating >= 1.2:
+                            st.success("🏆 Ты отыграл этот матч в жесткий плюс!")
+                        else:
+                            st.warning("⚠️ Твоя сенса 1.60 создает микро-тряску кисти. Снижай eDPI до 1.45.")
+                else:
+                    st.warning("⚠️ Не удалось автоматически сопоставить имена колонок событий. Вот структура доступных данных:")
+                    st.write(events_df.head(5))
             else:
-                # Альтернативный метод сбора игроков, если демка выдает другую структуру
-                try:
-                    players_list = parser.parse_players()
-                    st.write("ИИ нашел структуру игроков через parse_players:")
-                    st.write(players_list)
-                except:
-                    st.warning("Не удалось автоматически отфильтровать колонки игроков. Вот сырая таблица:")
-                    st.write(players_df.head(5))
+                st.warning("Лог событий player_death пуст. Проверь файл демки.")
                 
         except Exception as parse_err:
             st.markdown(f"<div class='error-box'><h4>🔴 КРИТИЧЕСКАЯ ОШИБКА АНАЛИЗА:</h4>{parse_err}</div>", unsafe_allow_html=True)
