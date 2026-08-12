@@ -26,6 +26,7 @@ def show_page():
     df_deaths = pd.DataFrame({'x': death_x, 'y': death_y, 'Тип': 'Твоя Смерть'})
     df_map_data = pd.concat([df_frags, df_deaths])
 
+    # Отрисовываем интерактивный scatter с зумом и перемещением
     st.scatter_chart(
         df_map_data,
         x='x',
