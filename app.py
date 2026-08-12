@@ -14,33 +14,67 @@ except:
 
 st.set_page_config(page_title="HLTV AI PARSER PRO", layout="wide")
 
-# ИНЪЕКЦИЯ СТИЛЯ CYBERSHOCK BLACKOUT
-st.markdown("""
-    <style>
-    .stApp { background-color: #080A0D !important; color: #E2E8F0 !important; }
-    [data-testid="stSidebar"] { background-color: #0C0F14 !important; border-right: 1px solid #1F2937; }
-    h1, h2, h3, h4 { color: #FFFFFF !important; font-family: 'Inter', sans-serif; font-weight: 800 !important; }
-    .faceit-card {
-        background: linear-gradient(135deg, #151922 0%, #0D1017 100%);
-        border: 1px solid #232A36;
-        border-radius: 6px;
-        padding: 15px;
-        margin-bottom: 10px;
-        transition: all 0.3s ease;
-    }
-    .faceit-card:hover { border-color: #FF5500; transform: translateY(-2px); }
-    .hltv-stat { font-size: 24px; font-weight: bold; color: #00FF66; }
-    .metric-title { color: #94A3B8; font-size: 14px; }
-    </style>
-    """, unsafe_allow_html=True)
-
 st.sidebar.markdown("<h2 style='color:#FF5500 !important; font-size:22px;'>🧡 FACEIT AI HUB</h2>", unsafe_allow_html=True)
+
+# ⚡ НОВАЯ СУПЕР-ФИЧА: ПЕРЕКЛЮЧАТЕЛЬ КАСТОМНЫХ ФОНОВ САЙТА
+st.sidebar.markdown("---")
+st.sidebar.markdown("#### 🎨 СТИЛЬ ИНТЕРФЕЙСА:")
+theme_select = st.sidebar.radio("Выбери задний фон сайта:", ["🔲 Глубокий Черный (Full Black)", "🩸 Канеки Кен (Анимированный Гуль)"])
+st.sidebar.markdown("---")
+
+# МЕНЮ НАВИГАЦИИ
 menu = st.sidebar.selectbox("НАВИГАЦИЯ СИСТЕМЫ:", [
     "🖥️ Загрузка Демки и HLTV Анализ",
     "🗺️ Интерактивная Карта и Пики",
     "📑 100 Параметров и Оценки",
     "🤖 Steam Бот и Рекорды Матча"
 ])
+
+# ИНЪЕКЦИЯ СТИЛЕЙ И СМЕНЫ ФОНА В ЗАВИСИМОСТЬ ОТ ВЫБОРА
+if theme_select == "🔲 Глубокий Черный (Full Black)":
+    st.markdown("""
+        <style>
+        .stApp { background-color: #080A0D !important; color: #E2E8F0 !important; }
+        [data-testid="stSidebar"] { background-color: #0C0F14 !important; border-right: 1px solid #1F2937; }
+        .faceit-card { background: linear-gradient(135deg, #151922 0%, #0D1017 100%); border: 1px solid #232A36; border-radius: 6px; padding: 15px; margin-bottom: 10px; }
+        h1, h2, h3, h4 { color: #FFFFFF !important; font-family: 'Inter', sans-serif; font-weight: 800 !important; }
+        .hltv-stat { font-size: 24px; font-weight: bold; color: #00FF66; }
+        .metric-title { color: #94A3B8; font-size: 14px; }
+        </style>
+        """, unsafe_allow_html=True)
+else:
+    # КАНЕКИ КЕН (ЖИВАЯ АНИМАЦИЯ НА ЗАДНИЙ ПЛАН)
+    st.markdown("""
+        <style>
+        /* Встраиваем зацикленный анимированный фон с Канеки из Токийского Гуля */
+        .stApp {
+            background: linear-gradient(rgba(8, 10, 13, 0.75), rgba(8, 10, 13, 0.75)), 
+                        url('https://giphy.com') no-repeat center center fixed !important;
+            background-size: cover !important;
+            color: #F8FAFC !important;
+        }
+        /* Делаем боковое меню стильно полупрозрачным */
+        [data-testid="stSidebar"] { 
+            background-color: rgba(12, 15, 20, 0.85) !important; 
+            border-right: 1px solid rgba(255, 51, 68, 0.3); 
+            backdrop-filter: blur(10px);
+        }
+        /* Прозрачные неоновые Faceit-карточки в стиле Гуля */
+        .faceit-card { 
+            background: rgba(21, 26, 34, 0.75) !important; 
+            border: 1px solid rgba(255, 51, 68, 0.4) !important; 
+            border-radius: 6px; 
+            padding: 15px; 
+            margin-bottom: 10px; 
+            backdrop-filter: blur(5px);
+            box-shadow: 0 0 10px rgba(255, 51, 68, 0.1);
+        }
+        .faceit-card:hover { border-color: #FF3344 !important; box-shadow: 0 0 15px rgba(255, 51, 68, 0.3); }
+        h1, h2, h3, h4 { color: #FFFFFF !important; font-family: 'Inter', sans-serif; text-shadow: 0 0 8px rgba(255, 51, 68, 0.5); }
+        .hltv-stat { font-size: 24px; font-weight: bold; color: #FF3344; text-shadow: 0 0 10px rgba(255, 51, 68, 0.6); }
+        .metric-title { color: #CBD5E1; font-size: 14px; }
+        </style>
+        """, unsafe_allow_html=True)
 
 MY_DPI = 1100
 CURRENT_SENS = 1.60
@@ -54,7 +88,6 @@ if menu == "🖥️ Загрузка Демки и HLTV Анализ":
     uploaded_demo = st.file_uploader("Перетащи сюда файл матча (.dem) [Максимум 500MB]", type=["dem"])
     
     if uploaded_demo is not None:
-        # Защита оперативки: пишем демку 300МБ на диск сервера кусочками по 1 мегабайту
         with st.spinner("💾 Потоковое скачивание тяжелой демки в облако (300MB+)..."):
             with open("match.dem", "wb") as f:
                 while True:
@@ -75,10 +108,9 @@ if menu == "🖥️ Загрузка Демки и HLTV Анализ":
     hltv_rating = 1.32
     reaction_time = 174
     
-    # Жестко зафиксированные 4 колонки — теперь без ошибок синтаксиса!
     c1, c2, c3, c4 = st.columns(4)
     with c1:
-        st.markdown(f"<div class='metric-title'>HLTV Рейтинг 2.0</div><div class='hltv-stat' style='color:#FF5500;'>{hltv_rating}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='metric-title'>HLTV Рейтинг 2.0</div><div class='hltv-stat'>{hltv_rating}</div>", unsafe_allow_html=True)
     with c2:
         st.markdown(f"<div class='metric-title'>Скорость реакции кисти</div><div class='hltv-stat'>{reaction_time} мс</div>", unsafe_allow_html=True)
     with c3:
@@ -106,7 +138,6 @@ if menu == "🖥️ Загрузка Демки и HLTV Анализ":
             st.markdown(f"<div class='faceit-card'><div style='font-weight:bold; color:#3B82F6;'>{team_b[i]}</div><div style='font-size:12px; color:#94A3B8;'>Faceit: 10 LVL</div><div style='font-size:14px; margin-top:5px;'>K/D: 0.98</div></div>", unsafe_allow_html=True)
             st.button(f"👁️ Профиль {team_b[i]}", key=f"btn_b_{i}")
 
-    # ССЫЛКА НА ИИ-НАРЕЗКУ ХАЙЛАЙТОВ
     st.markdown("---")
     st.markdown("### 🎬 Автоматический монтаж лучших моментов матча")
     st.link_button("📺 СМОТРЕТЬ ИИ-НАРЕЗКУ ХАЙЛАЙТОВ МАТЧА НА YOUTUBE", "https://youtube.com")
