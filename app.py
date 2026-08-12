@@ -39,9 +39,8 @@ if uploaded_demo is not None:
             from demoparser2 import DemoParser
             parser = DemoParser("match.dem")
             
-            # 🔥 ИСПРАВЛЕНИЕ: Парсим строго КЛЮЧЕВЫЕ СОБЫТИЯ, а не тики кадров!
-            # Это отсечет миллионные дубликаты строк
-            events_df = parser.parse_events("player_death")
+            # 🔥 ИСПРАВЛЕНИЕ: Передаем ['player_death'] в квадратных скобках как список (Vec), чтобы C++ бэкенд не ругался
+            events_df = parser.parse_events(["player_death"])
             
             if not events_df.empty:
                 st.markdown("<div class='success-box'><h3>✅ ИГРОКИ УСПЕШНО НАЙДЕНЫ!</h3>Выбери свой ник ниже для автоматического расчета статистики.</div>", unsafe_allow_html=True)
