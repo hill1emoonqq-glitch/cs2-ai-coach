@@ -20,65 +20,71 @@ st.write("Сайт пытается прочитать бинарные логи
 uploaded_demo = st.file_uploader("Загрузи реальный файл матча (.dem) весом до 500 МБ:", type=["dem"])
 
 if uploaded_demo is not None:
-    # Очищаем старые файлы перед новой сессией
     if os.path.exists("match.dem"):
         os.remove("match.dem")
         
-    # Шаг 1: Честное потоковое сохранение файла на диск сервера
-    with st.spinner("💾 Скачивание файла демки на сервер по частям (Защита от OOM)..."):
+    with st.spinner("💾 Скачивание файла демки на сервер по частям..."):
         try:
             with open("match.dem", "wb") as f:
                 while True:
-                    chunk = uploaded_demo.read(1024 * 1024) # Читаем строго по 1 МБ
-                    if not chunk:
-                        break
+                    chunk = uploaded_demo.read(1024 * 1024)
+                    if not chunk: break
                     f.write(chunk)
             st.success(f"Загрузка завершена! Размер файла: {round(os.path.getsize('match.dem') / (1024*1024), 2)} МБ.")
         except Exception as upload_err:
-            st.error(f"Ошибка сохранения файла на диск: {upload_err}")
+            st.error(f"Ошибка сохранения файла: {upload_err}")
 
-    # Шаг 2: Настоящий технический разбор без рандома и шаблонов
-    with st.spinner("⚙️ Облачный парсер пытается десериализовать тики матча..."):
+    with st.spinner("⚙️ Облачный парсер извлекает логи убийств..."):
         try:
-            # Импортируем demoparser2, который мы прописывали в requirements
             from demoparser2 import DemoParser
-            
             parser = DemoParser("match.dem")
             
-            # Достаем реальные события смертей из файла
+            # Извлекаем сырые тики смертей
             kills_df = parser.parse_ticks(["player_death"])
             
             if not kills_df.empty:
-                st.markdown("<div class='success-box'><h3>✅ ПАРСИНГ УСПЕШНО ВЫПОЛНЕН!</h3>Данные извлечены напрямую из демки.</div>", unsafe_allow_html=True)
+                st.markdown("<div class='success-box'><h3>✅ СТРУКТУРА ДЕМКИ УСПЕШНОПРОЧИТАНА!</h3>Данные таблиц извлечены. Проверяем колонки...</div>", unsafe_allow_html=True)
                 
-                # Показываем список всех реальных игроков, найденных в файле
-                all_players = kills_df["attacker_name"].dropna().unique()
-                selected_player = st.selectbox("ИИ нашел игроков в этом матче. Выбери свой ник:", all_players)
+                # Защита от мутаций Valve: смотрим, какие колонки РЕАЛЬНО есть в файле
+                cols = kills_df.columns.tolist()
                 
-                if selected_player:
-                    # Считаем чистую статистику из таблицы смертей демки
-                    p_kills = len(kills_df[kills_df["attacker_name"] == selected_player])
-                    p_deaths = len(kills_df[kills_df["user_name"] == selected_player])
-                    p_hs = len(kills_df[(kills_df["attacker_name"] == selected_player) & (kills_df["headshot"] == True)])
+                # Определяем, как называются поля убийцы и жертвы в этой конкретной демке
+                attacker_key = "attacker_name" if "attacker_name" in cols else ("attacker" if "attacker" in cols else None)
+                victim_key = "user_name" if "user_name" in cols else ("user" if "user" in cols else ("victim" if "victim" in cols else None))
+                
+                # Если парсер нашёл нужные столбцы
+                if attacker_key and victim_key:
+                    all_players = kills_df[attacker_key].dropna().unique()
+                    selected_player = st.selectbox("ИИ нашёл игроков в этой демке. Выбери свой ник:", all_players)
                     
-                    hs_percent = int((p_hs / p_kills * 100)) if p_kills > 0 else 0
-                    hltv_rating = round(0.5 + (p_kills / (p_deaths if p_deaths > 0 else 1)) * 0.5, 2)
-                    
-                    # Вывод честных данных матча
-                    st.markdown(f"## 📊 Реальная статистика для: **{selected_player}**")
-                    c1, c2, c3 = st.columns(3)
-                    c1.metric("Настоящие убийства (Kills)", p_kills)
-                    c2.metric("Настоящие смерти (Deaths)", p_deaths)
-                    c3.metric("Честный процент Headshots", f"{hs_percent}%")
-                    
-                    st.metric("Рассчитанный HLTV Рейтинг 2.0", hltv_rating)
+                    if selected_player:
+                        p_kills = len(kills_df[kills_df[attacker_key] == selected_player])
+                        p_deaths = len(kills_df[kills_df[victim_key] == selected_player])
+                        
+                        # Проверяем наличие хедшотов
+                        hs_key = "headshot" if "headshot" in cols else None
+                        if hs_key:
+                            p_hs = len(kills_df[(kills_df[attacker_key] == selected_player) & (kills_df[hs_key] == True)])
+                            hs_percent = int((p_hs / p_kills * 100)) if p_kills > 0 else 0
+                        else:
+                            hs_percent = "Нет данных в тиках"
+                            
+                        hltv_rating = round(0.5 + (p_kills / (p_deaths if p_deaths > 0 else 1)) * 0.5, 2)
+                        
+                        st.markdown(f"## 📊 Настоящая статистика для: **{selected_player}**")
+                        c1, c2, c3 = st.columns(3)
+                        c1.metric("Настоящие убийства (Kills)", p_kills)
+                        c2.metric("Настоящие смерти (Deaths)", p_deaths)
+                        c3.metric("Честный процент Headshots", f"{hs_percent}%")
+                        st.metric("Рассчитанный HLTV Рейтинг 2.0", hltv_rating)
+                else:
+                    st.warning("⚠️ Valve обновили ключи логов. Вот сырые доступные данные из твоей демки для анализа:")
+                    st.write(kills_df.head(10)) # Выводим первые 10 строк реальной таблицы, чтобы увидеть её структуру
             else:
-                st.warning("Парсер прочитал файл, но таблица событий player_death оказалась пустой. Возможно, демка повреждена или записана некорректно.")
+                st.warning("Таблица событий player_death оказалась пустой.")
                 
-        except ImportError:
-            st.markdown("<div class='error-box'><h4>🔴 ОШИБКА ОКРУЖЕНИЯ СЕРВЕРА:</h4>Библиотека <b>demoparser2</b> не установлена на облачном сервере Streamlit. Убедись, что в твоем файле <b>requirements.txt</b> на GitHub написана строчка: <br><code>demoparser2==0.1.34</code></div>", unsafe_allow_html=True)
         except Exception as parse_err:
-            st.markdown(f"<div class='error-box'><h4>🔴 КРИТИЧЕСКАЯ ОШИБКА ЧТЕНИЯ ДЕМКИ:</h4>Сервер не смог расшифровать этот .dem файл.<br><b>Текст ошибки:</b> {parse_err}<br><br><i>бесплатное облако Streamlit часто блокирует тяжелый бинарный разбор из-за лимитов процессора Linux.</i></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='error-box'><h4>🔴 КРИТИЧЕСКАЯ ОШИБКА АНАЛИЗА:</h4>{parse_err}</div>", unsafe_allow_html=True)
 
 else:
-    st.info("🔄 Ожидание загрузки файла. Перетащи сюда демку матча CS2 (.dem), чтобы запустить реальный бэкенд-тест.")
+    st.info("🔄 Ожидание файла. Закинь сюда .dem файл матча, чтобы запустить реальный бэкенд-тест.")
