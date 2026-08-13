@@ -1,9 +1,9 @@
 import streamlit as st
 import json
 from parser_logic import parse_uploaded_demo
-from google import genai
+from openai import OpenAI
 
-# Базовая настройка страницы
+# Настройка страницы
 st.set_page_config(page_title="CS2 AI Match Analyst", page_icon="🎯")
 
 st.title("🎯 Автономный ИИ-Аналитик CS2")
@@ -11,12 +11,12 @@ st.subheader("Честный расчет Premier Elo, разбор ошибок
 
 st.info("""
 **Как это работает:** Загрузи файлы демок (.dem), которые ты скачал из Steam. 
-Сайт сам извлечет более 100 скрытых параметров игры, передаст их встроенному ИИ-тренеру и сразу выведет готовый вердикт на эту страницу.
+Сайт сам извлечет более 100 скрытых параметров игры, передаст их ИИ-тренеру DeepSeek и сразу выведет готовый вердикт на эту страницу.
 """)
 
-# Поле для ввода бесплатного API ключа (чтобы ИИ работал лично для тебя)
-api_key = st.text_input("🔑 Введи свой бесплатный Google Gemini API Key:", type="password")
-st.caption("Получить ключ за 1 минуту можно на сайте: https://google.com")
+# Поле для ввода ключа DeepSeek
+api_key = st.text_input("🔑 Введи свой DeepSeek API Key:", type="password")
+st.caption("Получить ключ и бесплатный баланс можно на сайте: https://deepseek.com")
 
 st.markdown("### 📦 Шаг 1: Загрузка файлов матчей")
 uploaded_files = st.file_uploader(
@@ -34,7 +34,7 @@ if uploaded_files:
         st.markdown("### 🚀 Шаг 2: Запуск анализа")
         if st.button("🔥 Начать глубокий ИИ-анализ", type="primary", use_container_width=True):
             if not api_key:
-                st.error("❌ Сначала введи свой API Key в поле выше, чтобы подключить ИИ-тренера!")
+                st.error("❌ Сначала введи свой DeepSeek API Key в поле выше, чтобы подключить ИИ-тренера!")
             else:
                 all_matches_report = []
                 progress_bar = st.progress(0)
@@ -57,11 +57,14 @@ if uploaded_files:
                 # Переводим логи матчей в строку
                 final_json_string = json.dumps(all_matches_report, ensure_ascii=False, indent=2, default=str)
                 
-                # 2. ОТПРАВКА В ИИ
-                with st.spinner("🤖 ИИ-Тренер изучает логи твоих матчей и составляет план тренировок..."):
+                # 2. ОТПРАВКА В ИИ (DEEPSEEK)
+                with st.spinner("🤖 ИИ-Тренер DeepSeek изучает логи твоих матчей и составляет план тренировок..."):
                     try:
-                        # Инициализируем нового официального клиента Gemini
-                        client = genai.Client(api_key=api_key)
+                        # Подключаемся к серверу DeepSeek
+                        client = OpenAI(
+                            api_key=api_key,
+                            base_url="https://deepseek.com"
+                        )
                         
                         prompt = f"""
                         Ты — профессиональный ИИ-аналитик и главный тренер по CS2 уровня Tier-1 команд. Твоя задача — провести жесткий, объективный и детальный аудит матчей на основе реальных данных из парсера демо-файла. Забудь про случайные числа, банальные советы и угадывание. Анализируй только предоставленный JSON-отчет.
@@ -87,17 +90,20 @@ if uploaded_files:
                         {final_json_string}
                         """
                         
-                        # Делаем запрос к самой быстрой и умной модели Flash
-                        response = client.models.generate_content(
-                            model='gemini-2.5-flash',
-                            contents=prompt,
+                        # Запрос к быстрой и мощной модели deepseek-chat
+                        response = client.chat.completions.create(
+                            model="deepseek-chat",
+                            messages=[
+                                {"role": "user", "content": prompt}
+                            ],
+                            stream=False
                         )
                         
-                        # Выводим красивый ответ ИИ прямо на экран сайта!
+                        # Выводим ответ ИИ на страницу сайта
                         st.markdown("---")
                         st.subheader("📋 ВЕРДИКТ ИИ-ТРЕНЕРА И ПЛАН ТРЕНИРОВОК")
-                        st.markdown(response.text)
+                        st.markdown(response.choices[0].message.content)
                         st.balloons()
                         
                     except Exception as ai_error:
-                        st.error(f"❌ Ошибка при обращении к ИИ: {ai_error}. Проверь правильность API-ключа.")
+                        st.error(f"❌ Ошибка при обращении к ИИ: {ai_error}. Проверь правильность API-ключа DeepSeek.")
