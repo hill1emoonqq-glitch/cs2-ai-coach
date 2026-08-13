@@ -2,35 +2,49 @@ import os
 from demoparser2 import DemoParser
 
 def parse_uploaded_demo(uploaded_file, match_idx):
-    """Принимает файл из интерфейса Streamlit, сохраняет на диск сервера и парсит"""
-    # Создаем временный путь на сервере GitHub
+    """Глубокий экстрактор: вытаскивает точные координаты, оружие, хедшоты и урон по миллиметрам"""
     temp_path = f"/tmp/uploaded_match_{match_idx}.dem" if os.path.exists("/tmp") else f"uploaded_match_{match_idx}.dem"
     
     try:
-        # Записываем загруженный файл на диск сервера небольшими кусками
         with open(temp_path, "wb") as f:
             f.write(uploaded_file.getbuffer())
             
-        # Запускаем парсер на Rust
         parser = DemoParser(temp_path)
         header = parser.parse_header()
+        
+        # 1. Вытаскиваем детальные логи убийств (с оружием, хедшотами и координатами)
+        kills_df = parser.parse_ticks([
+            "player_death"
+        ], columns=[
+            "tick", "attacker_name", "attacker_steamid", 
+            "user_name", "user_steamid", "weapon", "headshot",
+            "attacker_x", "attacker_y", "attacker_z",
+            "user_x", "user_y", "user_z"
+        ])
+        
+        # 2. Вытаскиваем детальные логи урона (куда попал, сколько снёс)
+        damage_df = parser.parse_ticks([
+            "player_hurt"
+        ], columns=[
+            "tick", "attacker_name", "user_name", "dmg_health", "hitgroup", "weapon"
+        ])
+
+        # Ограничиваем вывод строк, чтобы ИИ не сломался от объема, берем только важные события
+        kills_clean = kills_df.dropna(subset=["attacker_name", "user_name"]).tail(150).to_dict(orient="records")
+        damage_clean = damage_df.dropna(subset=["attacker_name", "user_name"]).tail(300).to_dict(orient="records")
         
         parsed_data = {
             "match_id": match_idx,
             "map": header.get("map_name", "Unknown"),
             "total_ticks": header.get("total_ticks", 0),
-            "kills": parser.parse_ticks(["player_death"]),
-            "damage": parser.parse_ticks(["player_hurt"]),
-            "grenades": parser.parse_ticks(["smokegrenade_detonate", "flashbang_detonate", "hegrenade_detonate"]),
-            "blind": parser.parse_ticks(["player_blind"]),
-            "shots": parser.parse_ticks(["weapon_fire"])
+            "kills_detailed": kills_clean,
+            "damage_detailed": damage_clean
         }
         return parsed_data
 
     except Exception as e:
-        raise Exception(f"Ошибка парсинга файла: {str(e)}")
+        raise Exception(f"Ошибка глубокого парсинга: {str(e)}")
         
     finally:
-        # Жестко удаляем файл, чтобы не забить сервер и не вызвать сбой памяти
         if os.path.exists(temp_path):
             os.remove(temp_path)
