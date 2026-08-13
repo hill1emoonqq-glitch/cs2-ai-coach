@@ -12,10 +12,11 @@ def parse_uploaded_demo(uploaded_file, match_idx):
         parser = DemoParser(temp_path)
         header = parser.parse_header()
         
+        # ИСПРАВЛЕНО: используем аргумент selected_columns вместо columns
         # 1. Вытаскиваем детальные логи убийств (с оружием, хедшотами и координатами)
         kills_df = parser.parse_ticks([
             "player_death"
-        ], columns=[
+        ], selected_columns=[
             "tick", "attacker_name", "attacker_steamid", 
             "user_name", "user_steamid", "weapon", "headshot",
             "attacker_x", "attacker_y", "attacker_z",
@@ -25,11 +26,11 @@ def parse_uploaded_demo(uploaded_file, match_idx):
         # 2. Вытаскиваем детальные логи урона (куда попал, сколько снёс)
         damage_df = parser.parse_ticks([
             "player_hurt"
-        ], columns=[
+        ], selected_columns=[
             "tick", "attacker_name", "user_name", "dmg_health", "hitgroup", "weapon"
         ])
 
-        # Ограничиваем вывод строк, чтобы ИИ не сломался от объема, берем только важные события
+        # Фильтруем пустые значения и берем последние события матча для ИИ-анализа
         kills_clean = kills_df.dropna(subset=["attacker_name", "user_name"]).tail(150).to_dict(orient="records")
         damage_clean = damage_df.dropna(subset=["attacker_name", "user_name"]).tail(300).to_dict(orient="records")
         
