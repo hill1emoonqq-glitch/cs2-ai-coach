@@ -21,22 +21,23 @@ if uploaded_files:
     if len(uploaded_files) > 7:
         st.warning("⚠️ Пожалуйста, выберите не более 7 файлов за один раз.")
     else:
-        all_players = ["unlight", "Rage", "Svenne Bananen :-)", "L1ME ^_^\", \"Vroterdam\", \"Melya\"]
-        target_player = st.selectbox(\"👤 Выбери свой никнейм для расчета личной статистики:\", all_players)
+        # ИСПРАВЛЕНО: Список игроков написан чисто, без багов экранирования кавычек
+        all_players = ["unlight", "Rage", "Svenne", "L1ME", "Vroterdam", "Melya"]
+        target_player = st.selectbox("👤 Выбери свой никнейм для расчета личной статистики:", all_players)
         
-        if st.button(\"🚀 Запустить честный расчет параметров\", type=\"primary\", use_container_width=True):
+        if st.button("🚀 Запустить честный расчет параметров", type="primary", use_container_width=True):
             all_reports = []
             
-            with st.spinner(\"🧠 Математический движок вычисляет углы, пики и тайминги...\"):
+            with st.spinner("🧠 Математический движок вычисляет углы, пики и тайминги..."):
                 for idx, file in enumerate(uploaded_files, 1):
                     try:
                         match_data = parse_uploaded_demo(file, idx)
                         all_reports.append(match_data)
                     except Exception as e:
-                        st.error(f\"Ошибка в файле {file.name}: {e}\")
+                        st.error(f"Ошибка в файле {file.name}: {e}")
             
             if all_reports:
-                st.success(\"🎉 Честный анализ параметров успешно завершен!\")
+                st.success("🎉 Честный анализ параметров успешно завершен!")
                 
                 # === ДИНАМИЧЕСКИЙ РАСЧЕТ ИЗ ВНУТРЕННОСТЕЙ ДЕМКИ ===
                 p_kills = 0
@@ -47,24 +48,24 @@ if uploaded_files:
                 maps_played = []
                 
                 for match in all_reports:
-                    maps_played.append(match.get(\"map\", \"Unknown\"))
+                    maps_played.append(match.get("map", "Unknown"))
                     
-                    kills_log = match.get(\"kills_sample\", [])
+                    kills_log = match.get("kills_sample", [])
                     for k in kills_log:
                         if isinstance(k, dict):
-                            if k.get(\"attacker_name\") == target_player:
+                            if k.get("attacker_name") == target_player:
                                 p_kills += 1
-                                if k.get(\"headshot\") or k.get(\"is_headshot\"):
-                                    total_headshots += 1
-                            if k.get(\"user_name\") == target_player:
+                                if k.get("headshot") or k.get("is_headshot"):
+                                    p_headshots += 1
+                            if k.get("user_name") == target_player:
                                 p_deaths += 1
-                            rounds_field = k.get(\"total_rounds_played\", 0)
+                            rounds_field = k.get("total_rounds_played", 0)
                             if rounds_field and int(rounds_field) > max_rounds:
                                 max_rounds = int(rounds_field)
                                 
-                    ticks_log = match.get(\"player_ticks_sample\", [])
+                    ticks_log = match.get("player_ticks_sample", [])
                     for t in ticks_log:
-                        if isinstance(t, dict) and t.get(\"player_name\") == target_player:
+                        if isinstance(t, dict) and t.get("player_name") == target_player:
                             p_ticks_count += 1
 
                 # Честные киберспортивные формулы
@@ -102,21 +103,21 @@ if uploaded_files:
                 if calculated_elo > 2001: faceit_lvl = 10
 
                 # --- ВЫВОД ДАШБОРДА НА СТРАНИЦУ ---
-                st.markdown(\"---\")
-                st.header(f\"📊 Итоговый честный дашборд игрока: {target_player}\")
+                st.markdown("---")
+                st.header(f"📊 Итоговый честный дашборд игрока: {target_player}")
                 
                 col_elo1, col_elo2 = st.columns(2)
                 with col_elo1:
-                    st.metric(label=\"Твой реальный рейтинг Faceit ELO\", value=f\"{calculated_elo} ELO\", delta=f\"{faceit_lvl} ЛВЛ Faceit\")
+                    st.metric(label="Твой реальный рейтинг Faceit ELO", value=f"{calculated_elo} ELO", delta=f"{faceit_lvl} ЛВЛ Faceit")
                 with col_elo2:
                     premier_equivalent = int(calculated_elo * 8.2)
-                    st.metric(label=\"Эквивалент Premier Рейтинга\", value=f\"{premier_equivalent:,} ELO\")
+                    st.metric(label="Эквивалент Premier Рейтинга", value=f"{premier_equivalent:,} ELO")
 
-                tab1, tab2 = st.tabs([\"🎯 Стрельба и Аим\", \"📐 Позиционирование и Пики\"])
+                tab1, tab2 = st.tabs(["🎯 Стрельба и Аим", "📐 Позиционирование и Пики"])
                 with tab1:
                     c1, c2, c3 = st.columns(3)
-                    c1.metric(label=\"Скорость наводки (TTK)\", value=f\"{ttk_ms} мс\")
-                    c2.metric(label=\"Crosshair Placement\", value=f\"{crosshair_height}%\")
+                    c1.metric(label="Скорость наводки (TTK)", value=f"{ttk_ms} мс")
+                    c2.metric(label="Crosshair Placement", value=f"{crosshair_height}%")
                     c3.metric(label="Чистый K/D Ratio", value=str(real_kd))
                     st.caption(f"Убийств по логу: {p_kills} | Смертей: {p_deaths}")
                 with tab2:
