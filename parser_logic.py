@@ -2,7 +2,7 @@ import os
 from demoparser2 import DemoParser
 
 def parse_uploaded_demo(uploaded_file, match_idx):
-    """Экстрактор Source 2: собирает плотные массивы данных без перегрузки RAM сервера"""
+    """Экстрактор: собирает чистые логи событий матча без кривых внутренних расчетов"""
     temp_path = f"/tmp/uploaded_match_{match_idx}.dem" if os.path.exists("/tmp") else f"uploaded_match_{match_idx}.dem"
     
     try:
@@ -12,33 +12,40 @@ def parse_uploaded_demo(uploaded_file, match_idx):
         parser = DemoParser(temp_path)
         header = parser.parse_header()
         
-        # Запрашиваем 7 критических полей перемещения и здоровья
-        fields = ["tick", "X", "Y", "Z", "health", "player_name", "total_rounds_played"]
-        ticks_df = parser.parse_ticks(fields)
-        
-        # Собираем логи игровых событий смертей (для K/D и HS)
+        # Собираем чистые логи смертей (кто, кого, куда, из чего, хедшот ли)
         try:
             kills_df = parser.parse_events("player_death")
-            kills_clean = kills_df.to_dict(orient="records")
+            kills_clean = kills_df.tail(150).to_dict(orient="records")
         except:
             kills_clean = []
             
-        # Увеличиваем выборку до 25 000 строк для анализа реальной глубины матча
-        ticks_clean = ticks_df.dropna(subset=["player_name"]).tail(25000).to_dict(orient="records")
+        # Собираем чистые логи нанесенного урона
+        try:
+            hurt_df = parser.parse_events("player_hurt")
+            hurt_clean = hurt_df.tail(200).to_dict(orient="records")
+        except:
+            hurt_clean = []
+            
+        # Запрашиваем базовые тики для фиксации раундов и координат
+        try:
+            fields = ["tick", "X", "Y", "Z", "player_name", "total_rounds_played"]
+            ticks_df = parser.parse_ticks(fields)
+            ticks_clean = ticks_df.dropna(subset=["player_name"]).tail(500).to_dict(orient="records")
+        except:
+            ticks_clean = []
         
-        parsed_data = {
+        return {
             "match_id": match_idx,
             "map": header.get("map_name", "Unknown"),
             "total_ticks": header.get("total_ticks", 0),
-            "player_ticks_sample": ticks_clean,
-            "kills_sample": kills_clean
+            "kills_log": kills_clean,
+            "damage_log": hurt_clean,
+            "position_ticks": ticks_clean
         }
-        return parsed_data
 
     except Exception as e:
-        raise Exception(f"Ошибка глубокого парсинга: {str(e)}")
+        raise Exception(f"Ошибка сбора данных: {str(e)}")
         
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
-
