@@ -1,4 +1,4 @@
 streamlit
 demoparser2
 requests
-google-genai
+openai
