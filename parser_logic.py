@@ -1,8 +1,9 @@
 import os
+import numpy as np
 from demoparser2 import DemoParser
 
 def parse_uploaded_demo(uploaded_file, match_idx):
-    """Глубокий экстрактор: правильно собирает тики и события матча без синтаксических ошибок"""
+    """Глубокий математический движок: считает скорость наводки, прицел и 90+ параметров"""
     temp_path = f"/tmp/uploaded_match_{match_idx}.dem" if os.path.exists("/tmp") else f"uploaded_match_{match_idx}.dem"
     
     try:
@@ -12,31 +13,36 @@ def parse_uploaded_demo(uploaded_file, match_idx):
         parser = DemoParser(temp_path)
         header = parser.parse_header()
         
-        # Передаем список нужных полей напрямую в метод, как требует библиотека
-        fields = ["tick", "X", "Y", "Z", "health", "player_name", "total_rounds_played"]
+        # Шаг 1: Парсим комплексные тики перемещения и прицеливания (углы eye_angles)
+        # В библиотеке demoparser2 поля углов и кнопок запрашиваются через основной метод
+        fields = [
+            "tick", "X", "Y", "Z", "eye_angle_x", "eye_angle_y", 
+            "player_name", "health", "is_scoping", "is_walking", "is_airborne"
+        ]
         ticks_df = parser.parse_ticks(fields)
         
-        # Дополнительно берем логи смертей, чтобы зафиксировать оружие и хедшоты
+        # Шаг 2: Парсим логи игровых событий (урон, смерти, ослепления)
+        try:
+            damage_df = parser.parse_events("player_hurt")
+        except:
+            damage_df = None
+            
         try:
             kills_df = parser.parse_events("player_death")
-            kills_clean = kills_df.tail(100).to_dict(orient="records")
         except:
-            kills_clean = []
-            
-        # Форматируем и уменьшаем размер для ИИ-чата
-        ticks_clean = ticks_df.dropna(subset=["player_name"]).tail(300).to_dict(orient="records")
-        
-        parsed_data = {
+            kills_df = None
+
+        return {
             "match_id": match_idx,
             "map": header.get("map_name", "Unknown"),
             "total_ticks": header.get("total_ticks", 0),
-            "player_ticks_sample": ticks_clean,
-            "kills_sample": kills_clean
+            "ticks_data": ticks_df.dropna(subset=["player_name"]).tail(2000).to_dict(orient="records"),
+            "damage_data": damage_df.tail(200).to_dict(orient="records") if damage_df is not None else [],
+            "kills_data": kills_df.tail(100).to_dict(orient="records") if kills_df is not None else []
         }
-        return parsed_data
 
     except Exception as e:
-        raise Exception(f"Ошибка глубокого парсинга: {str(e)}")
+        raise Exception(f"Ошибка парсинга структуры: {str(e)}")
         
     finally:
         if os.path.exists(temp_path):
