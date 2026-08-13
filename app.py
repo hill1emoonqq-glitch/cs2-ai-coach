@@ -1,6 +1,77 @@
 import streamlit as st
 import pandas as pd
 import os
+import streamlit as st
+import json
+# Импортируем нашу безопасную функцию парсинга из parser_logic.py
+from parser_logic import download_and_parse_demo
+
+# --- СОЗДАЕМ МЕНЮ ДЛЯ ВЫБОРА ПРОЕКТА ---
+project_mode = st.sidebar.radio(
+    "Выберите инструмент:",
+    ["🎯 Честный ИИ-Анализ CS2 (Новый)", "📁 Мой прошлый проект (Старый)"]
+)
+
+if project_mode == "🎯 Честный ИИ-Анализ CS2 (Новый)":
+    # === ЗДЕСЬ НАЧИНАЕТСЯ НАШ НОВЫЙ КОД ===
+    st.title("🎯 ИИ-Аналитик матчей CS2")
+    st.subheader("Честный расчет Premier Elo, разбор ошибок и план тренировок")
+
+    st.markdown("""
+    Вставьте до 7 прямых ссылок на ваши демо-файлы (формат `.dem.bz2` из личной статистики Steam).
+    Система скачает их, достанет реальные параметры игры и подготовит отчет для ИИ.
+    """)
+
+    # Поле ввода ссылок
+    urls_input = st.text_area(
+        "Ссылки на демо-файлы (каждая ссылка с новой строки):", 
+        height=180,
+        placeholder="https://valve.net"
+    )
+
+    if st.button("🚀 Начать глубокий анализ", type="primary"):
+        urls = [url.strip() for url in urls_input.split("\n") if url.strip()]
+        
+        if not urls:
+            st.error("Пожалуйста, введите хотя бы одну ссылку на демо-файл.")
+        elif len(urls) > 7:
+            st.warning("Рекомендуется анализировать не более 7 матчей за раз для точной оценки.")
+        else:
+            all_matches_report = []
+            
+            # Индикаторы загрузки
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            
+            for idx, url in enumerate(urls, 1):
+                status_text.markdown(f"**⏳ Обработка матча {idx}/{len(urls)}...** Скачивание и извлечение данных на 100+ параметров.")
+                
+                try:
+                    # Вызываем безопасную функцию для GitHub
+                    match_data = download_and_parse_demo(url, idx)
+                    all_matches_report.append(match_data)
+                except Exception as e:
+                    st.error(f"❌ Ошибка в матче №{idx}: {e}")
+                    
+                progress_bar.progress(idx / len(urls))
+                
+            status_text.success("🎉 Все доступные матчи успешно обработаны без случайных чисел!")
+            
+            # Переводим в формат текста
+            final_json_string = json.dumps(all_matches_report, ensure_ascii=False, indent=2)
+            
+            st.subheader("📋 Итоговые данные для ИИ-Тренера")
+            st.markdown("Скопируйте этот текст и отправьте его ИИ вместе с системным промптом тренера:")
+            
+            # Окно с кодом и кнопкой копирования
+            st.code(final_json_string, language="json")
+
+else:
+    # === ЗДЕСЬ ОСТАЕТСЯ ВАШ ПРОШЛЫЙ ПРОЕКТ ===
+    st.info("Вы переключились на ваш прошлый проект. Ниже отображается его старый интерфейс.")
+    
+    # СЮДА ВСТАВЬТЕ ВЕСЬ ВАШ СТАРЫЙ КОД, КОТОРЫЙ БЫЛ В ФАЙЛЕ ИЗНАЧАЛЬНО
+    # (просто сдвиньте старый код вправо на 4 пробела (клавишей Tab), чтобы он находился внутри блока else)
 
 # Настройка интерфейса Cybershock
 st.set_page_config(page_title="REAL CS2 DEMO PARSER", layout="wide")
