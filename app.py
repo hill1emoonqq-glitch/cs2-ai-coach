@@ -1,38 +1,66 @@
-import os
-from demoparser2 import DemoParser
+import streamlit as st
+import json
+from parser_logic import parse_uploaded_demo
 
-def parse_uploaded_demo(uploaded_file, match_idx):
-    """Принимает файл из интерфейса Streamlit, сохраняет на диск сервера и парсит"""
-    # Создаем временный путь на сервере GitHub
-    temp_path = f"/tmp/uploaded_match_{match_idx}.dem" if os.path.exists("/tmp") else f"uploaded_match_{match_idx}.dem"
-    
-    try:
-        # Записываем загруженный файл на диск сервера небольшими кусками
-        with open(temp_path, "wb") as f:
-            f.write(uploaded_file.getbuffer())
-            
-        # Запускаем быстрый парсер на Rust
-        parser = DemoParser(temp_path)
-        header = parser.parse_header()
-        
-        parsed_data = {
-            "match_id": match_idx,
-            "map": header.get("map_name", "Unknown"),
-            "total_ticks": header.get("total_ticks", 0),
-            
-            # Собираем только самые важные логи игровых событий для ИИ
-            "kills": parser.parse_ticks(["player_death"]),
-            "damage": parser.parse_ticks(["player_hurt"]),
-            "grenades": parser.parse_ticks(["smokegrenade_detonate", "flashbang_detonate", "hegrenade_detonate"]),
-            "blind": parser.parse_ticks(["player_blind"]),
-            "shots": parser.parse_ticks(["weapon_fire"])
-        }
-        return parsed_data
+# Настройка страницы
+st.set_page_config(
+    page_title="CS2 AI Match Analyst",
+    page_icon="🎯",
+    layout="centered"
+)
 
-    except Exception as e:
-        raise Exception(f"Ошибка парсинга файла: {str(e)}")
+# Главный заголовок сайта
+st.title("🎯 ИИ-Аналитик матчей CS2")
+st.subheader("Объективная оценка скилла, расчет Premier Elo и персональный план тренировок")
+
+# Информационная карточка
+st.info("""
+**📊 Честный ИИ-анализ без случайных чисел**
+
+Вместо случайных цифр ты получишь объективную оценку, где твой текущий скилл строго равен реальному эло. 
+ИИ рассчитает примерное финальное Premier-эло за матч. На основе анализа создается персональная двухчасовая тренировка. 
+Ты получишь четкие фокусы для следующих матчей: на что именно обращать внимание и как побеждать.
+""")
+
+st.markdown("### 📦 Загрузка файлов матчей")
+
+# Кнопка загрузки файлов
+uploaded_files = st.file_uploader(
+    "Перетащите файлы демок (.dem) сюда или нажмите кнопку 'Browse files':", 
+    type=["dem"], 
+    accept_multiple_files=True
+)
+
+if uploaded_files:
+    if len(uploaded_files) > 7:
+        st.warning("⚠️ Пожалуйста, выберите не более 7 файлов за один раз во избежание перегрузки сервера.")
+    else:
+        st.markdown(f"Выбрано файлов для анализа: **{len(uploaded_files)}**")
         
-    finally:
-        # Жестко удаляем файл, чтобы не забить оперативную память сервера
-        if os.path.exists(temp_path):
-            os.remove(temp_path)
+        # Кнопка запуска анализа
+        if st.button("🚀 Начать глубокий ИИ-анализ", type="primary", use_container_width=True):
+            all_matches_report = []
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            
+            for idx, file in enumerate(uploaded_files, 1):
+                status_text.markdown(f"**⏳ Шаг {idx}/{len(uploaded_files)}:** Чтение и анализ структуры файла `{file.name}`...")
+                
+                try:
+                    match_data = parse_uploaded_demo(file, idx)
+                    all_matches_report.append(match_data)
+                    st.toast(f"Файл {file.name} успешно обработан!", icon="✅")
+                except Exception as e:
+                    st.error(f"❌ Ошибка при обработке файла {file.name}: {e}")
+                    
+                progress_bar.progress(idx / len(uploaded_files))
+                
+            status_text.success("🎉 Все загруженные демки успешно обработаны!")
+            
+            # Перевод данных в JSON-строку без ошибок
+            final_json_string = json.dumps(all_matches_report, ensure_ascii=False, indent=2, default=str)
+            
+            st.success("✅ Твой объективный игровой отчет сформирован!")
+            st.subheader("📋 Данные для ИИ-Тренера")
+            st.markdown("Скопируй сгенерированный ниже код и отправь его мне в чат вместе с промптом тренера:")
+            st.code(final_json_string, language="json")
