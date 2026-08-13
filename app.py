@@ -1,7 +1,7 @@
 import streamlit as st
 import json
+import requests
 from parser_logic import parse_uploaded_demo
-from openai import OpenAI
 
 # Настройка страницы
 st.set_page_config(page_title="CS2 AI Match Analyst", page_icon="🎯")
@@ -34,7 +34,7 @@ if uploaded_files:
         st.markdown("### 🚀 Шаг 2: Запуск анализа")
         if st.button("🔥 Начать глубокий ИИ-анализ", type="primary", use_container_width=True):
             if not api_key:
-                st.error("❌ Сначала введи свой DeepSeek API Key в поле выше, чтобы подключить ИИ-тренера!")
+                st.error("❌ Сначала введи свой DeepSeek API Key in поле выше, чтобы подключить ИИ-тренера!")
             else:
                 all_matches_report = []
                 progress_bar = st.progress(0)
@@ -57,17 +57,11 @@ if uploaded_files:
                 # Переводим логи матчей в строку
                 final_json_string = json.dumps(all_matches_report, ensure_ascii=False, indent=2, default=str)
                 
-                # 2. ОТПРАВКА В ИИ (DEEPSEEK)
+                # 2. ОТПРАВКА В ИИ ЧЕРЕЗ ПРЯМОЙ REQUESTS НА СТАНДАРТНЫЙ ЭНДПОИНТ (Самый надежный способ против 403 ошибки)
                 with st.spinner("🤖 ИИ-Тренер DeepSeek изучает логи твоих матчей и составляет план тренировок..."):
                     try:
-                        # Подключаемся к серверу DeepSeek
-                        client = OpenAI(
-                            api_key=api_key,
-                            base_url="https://deepseek.com"
-                        )
-                        
                         prompt = f"""
-                        Ты — профессиональный ИИ-аналитик и главный тренер по CS2 уровня Tier-1 команд. Твоя задача — провести жесткий, объективный и детальный аудит матчей на основе реальных данных из парсера демо-файла. Забудь про случайные числа, банальные советы и угадывание. Анализируй только предоставленный JSON-отчет.
+                        Ты — профессиональный ИИ-аналитик и главный тренер по CS2 уровня Tier-1 команд. Твоя задача — провести жесткий, объективный и детальный анонимный аудит матчей на основе реальных данных из парсера демо-файла. Забудь про случайные числа, банальные советы и угадывание. Анализируй только предоставленный JSON-отчет.
 
                         Используй свою встроенную базу знаний по всем картам и всем режимам (Premier, Сompetitive, Wingman, DM).
 
@@ -90,20 +84,40 @@ if uploaded_files:
                         {final_json_string}
                         """
                         
-                        # Запрос к быстрой и мощной модели deepseek-chat
-                        response = client.chat.completions.create(
-                            model="deepseek-chat",
-                            messages=[
+                        # Делаем чистый HTTP POST запрос к официальному API DeepSeek
+                        headers = {
+                            "Authorization": f"Bearer {api_key}",
+                            "Content-Type": "application/json"
+                        }
+                        
+                        data = {
+                            "model": "deepseek-chat",
+                            "messages": [
                                 {"role": "user", "content": prompt}
                             ],
-                            stream=False
+                            "stream": False
+                        }
+                        
+                        # Отправляем запрос
+                        response = requests.post(
+                            url="https://deepseek.com",
+                            headers=headers,
+                            json=data,
+                            timeout=60
                         )
                         
-                        # Выводим ответ ИИ на страницу сайта
-                        st.markdown("---")
-                        st.subheader("📋 ВЕРДИКТ ИИ-ТРЕНЕРА И ПЛАН ТРЕНИРОВОК")
-                        st.markdown(response.choices[0].message.content)
-                        st.balloons()
+                        # Проверяем ответ
+                        if response.status_code == 200:
+                            result_json = response.json()
+                            ai_text = result_json["choices"][0]["message"]["content"]
+                            
+                            # Выводим ответ ИИ на страницу сайта
+                            st.markdown("---")
+                            st.subheader("📋 ВЕРДИКТ ИИ-ТРЕНЕРА И ПЛАН ТРЕНИРОВОК")
+                            st.markdown(ai_text)
+                            st.balloons()
+                        else:
+                            st.error(f"❌ Ошибка API DeepSeek (Код {response.status_code}): {response.text}")
                         
                     except Exception as ai_error:
-                        st.error(f"❌ Ошибка при обращении к ИИ: {ai_error}. Проверь правильность API-ключа DeepSeek.")
+                        st.error(f"❌ Системная ошибка при отправке запроса: {ai_error}")
